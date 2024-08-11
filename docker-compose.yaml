@@ -1,0 +1,16 @@
+name: microservices
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: microservices
+      POSTGRES_USER: microservices
+      POSTGRES_PASSWORD: microservices
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+volumes:
+  postgres_data:

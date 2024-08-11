@@ -1,0 +1,23 @@
+extend type Query {
+    products: [Product!]!
+}
+
+extend type Mutation {
+    createProduct(input: CreateProductInput!): Boolean!
+    updateProduct(id: UUID!, input: UpdateProductInput!): Boolean!
+    deleteProduct(id: UUID!): Boolean!
+}
+
+type Product {
+    id: UUID!
+    title: String!
+    createdAt: Time!
+}
+
+input CreateProductInput {
+    title: String!
+}
+
+input UpdateProductInput {
+    title: String!
+}
