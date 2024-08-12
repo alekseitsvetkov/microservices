@@ -7,61 +7,85 @@ package resolvers
 import (
 	"context"
 
-	"example.com/microservices/apps/gateway/internal/gql/gqlmodel"
-	"example.com/microservices/apps/gateway/internal/grpc/models"
+	"github.com/alekseytsvetkov/microservices/apps/gateway/internal/gql/gqlmodels"
+	"github.com/alekseytsvetkov/microservices/libs/grpc"
+	productpb "github.com/alekseytsvetkov/microservices/proto/product"
 	"github.com/google/uuid"
 )
 
-// CreateProduct is the resolver for the createProduct field.
-func (r *mutationResolver) CreateProduct(ctx context.Context, input gqlmodel.CreateProductInput) (bool, error) {
-	req := &models.CreateProductRequest{
-		Title: input.Title,
-	}
+func (r *mutationResolver) CreateProduct(ctx context.Context, input gqlmodels.CreateProductInput) (bool, error) {
+	userID := r.middleware.GetUserIDFromCtx(ctx)
 
-	if err := r.grpc.CreateProduct(ctx, req); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-// UpdateProduct is the resolver for the updateProduct field.
-func (r *mutationResolver) UpdateProduct(ctx context.Context, id uuid.UUID, input gqlmodel.UpdateProductInput) (bool, error) {
-	req := &models.UpdateProductRequest{
-		Title: input.Title,
-	}
-
-	if err := r.grpc.UpdateProduct(ctx, id, req); err != nil {
-		return false, err
+	if _, err := r.productClient.CreateProduct(
+		ctx,
+		&productpb.CreateProductRequest{
+			UserId:      userID,
+			Title:       input.Title,
+			Description: input.Description,
+		},
+	); err != nil {
+		return false, grpc.ParseError(err).Error()
 	}
 
 	return true, nil
 }
 
-// DeleteProduct is the resolver for the deleteProduct field.
+func (r *mutationResolver) UpdateProduct(ctx context.Context, id uuid.UUID, input gqlmodels.UpdateProductInput) (bool, error) {
+	userID := r.middleware.GetUserIDFromCtx(ctx)
+
+	if _, err := r.productClient.UpdateProduct(
+		ctx,
+		&productpb.UpdateProductRequest{
+			Id:          id.String(),
+			UserId:      userID,
+			Title:       input.Title,
+			Description: input.Description,
+		},
+	); err != nil {
+		return false, grpc.ParseError(err).Error()
+	}
+
+	return true, nil
+}
+
 func (r *mutationResolver) DeleteProduct(ctx context.Context, id uuid.UUID) (bool, error) {
-	if err := r.grpc.DeleteProduct(ctx, id); err != nil {
-		return false, err
+	userID := r.middleware.GetUserIDFromCtx(ctx)
+
+	if _, err := r.productClient.DeleteProduct(
+		ctx,
+		&productpb.DeleteProductRequest{
+			Id:     id.String(),
+			UserId: userID,
+		},
+	); err != nil {
+		return false, grpc.ParseError(err).Error()
 	}
 
 	return true, nil
 }
 
-// Products is the resolver for the products field.
-func (r *queryResolver) Products(ctx context.Context) ([]*gqlmodel.Product, error) {
-	products, err := r.grpc.GetAllProducts(ctx)
+func (r *queryResolver) Products(ctx context.Context) ([]*gqlmodels.Product, error) {
+	userID := r.middleware.GetUserIDFromCtx(ctx)
+
+	res, err := r.productClient.ListProducts(
+		ctx,
+		&productpb.ListProductsRequest{
+			UserId: userID,
+		},
+	)
 	if err != nil {
-		return nil, err
+		return nil, grpc.ParseError(err).Error()
 	}
 
-	var output []*gqlmodel.Product
-	for _, product := range products {
+	var output []*gqlmodels.Product
+	for _, product := range res.Products {
 		output = append(
 			output,
-			&gqlmodel.Product{
-				ID:        uuid.MustParse(product.Id),
-				Title:     product.Title,
-				CreatedAt: product.CreatedAt.AsTime(),
+			&gqlmodels.Product{
+				ID:          uuid.MustParse(product.Id),
+				Title:       product.Title,
+				Description: product.Description,
+				CreatedAt:   product.CreatedAt.AsTime(),
 			},
 		)
 	}

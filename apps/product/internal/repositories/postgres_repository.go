@@ -2,40 +2,59 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
-	"example.com/microservices/apps/product/internal/model"
-	"github.com/lib/pq"
+	sq "github.com/Masterminds/squirrel"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/model"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type postgresRepository struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewPostgresRepository(db *sql.DB) Repository {
+func NewPostgresRepository(pool *pgxpool.Pool) Repository {
 	return &postgresRepository{
-		db: db,
+		pool: pool,
 	}
 }
 
-func (r *postgresRepository) Create(ctx context.Context, product *model.Product) error {
-	query := "INSERT INTO products(title) VALUES($1)"
+func (r *postgresRepository) Create(ctx context.Context, userID string, product *model.Product) error {
+	query, args, err := sq.
+		Insert("products").
+		Columns("user_id", "title", "description").
+		Values(userID, product.Title, product.Description).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
 
-	if _, err := r.db.ExecContext(ctx, query, product.Title); err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "unique_violation" {
+	if _, err = r.pool.Exec(ctx, query, args...); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return ErrAlreadyExists
 		}
+
 		return err
 	}
 
 	return nil
 }
 
-func (r *postgresRepository) GetAll(ctx context.Context) ([]*model.Product, error) {
-	query := "SELECT id, title, created_at FROM products"
+func (r *postgresRepository) GetAll(ctx context.Context, userID string) ([]*model.Product, error) {
+	query, args, err := sq.
+		Select("id", "title", "description", "created_at").
+		From("products").
+		Where(sq.Eq{"user_id": userID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,67 +63,69 @@ func (r *postgresRepository) GetAll(ctx context.Context) ([]*model.Product, erro
 	var products []*model.Product
 	for rows.Next() {
 		var product model.Product
-		if err := rows.Scan(&product.ID, &product.Title, &product.CreatedAt); err != nil {
+		if err = rows.Scan(
+			&product.ID,
+			&product.Title,
+			&product.Description,
+			&product.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
+
 		products = append(products, &product)
 	}
 
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
 	return products, nil
 }
 
-func (r *postgresRepository) Get(ctx context.Context, id string) (*model.Product, error) {
-	query := "SELECT id, title, created_at FROM products WHERE id = $1 LIMIT 1"
+func (r *postgresRepository) Update(ctx context.Context, id string, userID string, updatedFields map[string]interface{}) error {
+	query, args, err := sq.
+		Update("products").
+		SetMap(updatedFields).
+		Where(sq.Eq{"id": id, "user_id": userID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
 
-	var product model.Product
-	if err := r.db.QueryRowContext(ctx, query, id).Scan(&product.ID, &product.Title, &product.CreatedAt); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+	result, err := r.pool.Exec(ctx, query, args...)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return ErrAlreadyExists
 		}
-		return nil, err
-	}
 
-	return &product, nil
-}
-
-func (r *postgresRepository) Update(ctx context.Context, id string, product *model.Product) error {
-	query := "UPDATE products SET title = $1 WHERE id = $2"
-
-	result, err := r.db.ExecContext(ctx, query, product.Title, id)
-	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		return ErrNotFound
 	}
 
 	return nil
 }
 
-func (r *postgresRepository) Delete(ctx context.Context, id string) error {
-	query := "DELETE FROM products WHERE id = $1"
-
-	result, err := r.db.ExecContext(ctx, query, id)
+func (r *postgresRepository) Delete(ctx context.Context, id string, userID string) error {
+	query, args, err := sq.
+		Delete("products").
+		Where(sq.Eq{"id": id, "user_id": userID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	result, err := r.pool.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
 
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		return ErrNotFound
 	}
 

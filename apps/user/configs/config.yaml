@@ -1,0 +1,7 @@
+grpc:
+  server:
+    network: tcp
+    address: 0.0.0.0:50050
+db:
+  postgres:
+    url: postgres://postgres:postgres@postgres:5432/microservices?sslmode=disable

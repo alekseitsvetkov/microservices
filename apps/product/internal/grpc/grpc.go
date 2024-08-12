@@ -2,20 +2,16 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"net"
 
-	"example.com/microservices/apps/product/internal/config"
-	pb "example.com/microservices/libs/grpc/product"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/config"
+	pb "github.com/alekseytsvetkov/microservices/proto/product"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 )
 
-func Run(lc fx.Lifecycle, cfg *config.Config, server *server) {
-	listener, _ := net.Listen(
-		cfg.GRPC.Server.Network,
-		fmt.Sprintf("%s:%d", cfg.GRPC.Server.Host, cfg.GRPC.Server.Port),
-	)
+func Run(lc fx.Lifecycle, cfg *config.Config, server *Server) {
+	listener, _ := net.Listen(cfg.GRPC.Server.Network, cfg.GRPC.Server.Address)
 
 	svr := grpc.NewServer()
 

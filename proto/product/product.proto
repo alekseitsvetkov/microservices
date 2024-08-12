@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/alekseytsvetkov/microservices/proto/product";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message Product {
+    string id = 1;
+    string title = 2;
+    optional string description = 3;
+    google.protobuf.Timestamp created_at = 4;
+}
+
+message CreateProductRequest {
+    string user_id = 1;
+    string title = 2;
+    optional string description = 3;
+}
+
+message ListProductsRequest {
+    string user_id = 1;
+}
+
+message ListProductsResponse {
+    repeated Product products = 1;
+}
+
+message UpdateProductRequest {
+    string id = 1;
+    string user_id = 2;
+    optional string title = 3;
+    optional string description = 4;
+}
+
+message DeleteProductRequest {
+    string id = 1;
+    string user_id = 2;
+}
+
+service ProductService {
+    rpc CreateProduct(CreateProductRequest) returns (google.protobuf.Empty);
+    rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+    rpc UpdateProduct(UpdateProductRequest) returns (google.protobuf.Empty);
+    rpc DeleteProduct(DeleteProductRequest) returns (google.protobuf.Empty);
+}

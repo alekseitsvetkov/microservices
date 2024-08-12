@@ -1,7 +1,7 @@
-# command for run go server
-start:
-	@go run cmd/main.go
+.PHONY: gql-init gql-generate
 
-gql-gen:
-	@go run github.com/99designs/gqlgen generate
+gql-init:
+	go run github.com/99designs/gqlgen init
 
+gql-generate:
+	go run github.com/99designs/gqlgen generate

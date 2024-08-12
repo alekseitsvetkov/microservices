@@ -1,11 +1,11 @@
 package app
 
 import (
-	"example.com/microservices/apps/product/internal/config"
-	"example.com/microservices/apps/product/internal/database"
-	"example.com/microservices/apps/product/internal/grpc"
-	"example.com/microservices/apps/product/internal/repositories"
-	"example.com/microservices/apps/product/internal/services"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/config"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/database"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/grpc"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/repositories"
+	"github.com/alekseytsvetkov/microservices/apps/product/internal/services"
 	"go.uber.org/fx"
 )
 
@@ -18,6 +18,6 @@ func New() *fx.App {
 			fx.Annotate(services.NewService, fx.As(new(services.Service))),
 			grpc.NewServer,
 		),
-		fx.Invoke(database.Run, grpc.Run),
+		fx.Invoke(grpc.Run),
 	)
 }

@@ -1,14 +1,7 @@
 grpc:
   server:
     network: tcp
-    host: localhost
-    port: 50050
+    address: 0.0.0.0:50051
 db:
   postgres:
-    driver: postgres
-    host: localhost
-    port: 5432
-    name: microservices
-    user: microservices
-    password: microservices
-    sslMode: disable
+    url: postgres://postgres:postgres@postgres:5432/microservices?sslmode=disable

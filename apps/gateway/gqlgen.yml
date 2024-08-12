@@ -14,8 +14,8 @@ exec:
 
 # Where should any generated models go?
 model:
-  filename: internal/gql/gqlmodel/gqlmodel.go
-  package: gqlmodel
+  filename: internal/gql/gqlmodels/gqlmodels.go
+  package: gqlmodels
 
 # Where should the resolver implementations go?
 resolver:
@@ -24,7 +24,7 @@ resolver:
   package: resolvers
   filename_template: "{name}.resolvers.go"
   # Optional: turn on to not generate template comments above resolvers
-  # omit_template_comment: false
+  omit_template_comment: true
 
 # Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
 # struct_tag: json
@@ -55,7 +55,7 @@ resolver:
 # return_pointers_in_unmarshalinput: false
 
 # Optional: wrap nullable input fields with Omittable
-nullable_input_omittable: true
+# nullable_input_omittable: true
 
 # Optional: set to speed up generation time by not performing a final validation pass.
 # skip_validation: true
@@ -66,7 +66,7 @@ skip_mod_tidy: true
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-#  - "example.com/microservices/graph/model"
+#  - "github.com/alekseytsvetkov/microservices/services/gateway/graph/model"
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -74,17 +74,9 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
-  ID:
+  Int64:
     model:
-      - github.com/99designs/gqlgen/graphql.ID
-      - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
-      - github.com/99designs/gqlgen/graphql.Int32
-  Int:
-    model:
-      - github.com/99designs/gqlgen/graphql.Int
-      - github.com/99designs/gqlgen/graphql.Int64
-      - github.com/99designs/gqlgen/graphql.Int32
   UUID:
     model:
       - github.com/99designs/gqlgen/graphql.UUID

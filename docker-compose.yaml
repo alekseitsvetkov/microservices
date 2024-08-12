@@ -1,16 +1,58 @@
 name: microservices
 
 services:
+  user:
+    build:
+      context: .
+      dockerfile: apps/user/Dockerfile
+    container_name: user
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  product:
+    build:
+      context: .
+      dockerfile: apps/product/Dockerfile
+    container_name: product
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  auth:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+    container_name: auth
+
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    container_name: gateway
+    ports:
+      - 8000:8000
+    depends_on:
+      - user
+      - product
+      - auth
+
   postgres:
     image: postgres:latest
+    container_name: postgres
     environment:
       POSTGRES_DB: microservices
-      POSTGRES_USER: microservices
-      POSTGRES_PASSWORD: microservices
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - 5432:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  postgres_data:
+  postgres:

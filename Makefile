@@ -1,22 +1,15 @@
-.PHONY: compose-up migrate-create migrate-up
+.PHONY: compose-up migrate-create migrate-up generate-proto
 
 compose-up:
 	docker-compose -f $(FILE) up -d
 
 migrate-create:
-	@set "GOOSE_MIGRATION_DIR=.\migrations" && go run github.com/pressly/goose/v3/cmd/goose postgres "user=microservices password=microservices dbname=microservices sslmode=disable" create $(name) sql
+	migrate create -ext sql -dir ./migrations $(NAME)
 
 migrate-up:
-	@set "GOOSE_MIGRATION_DIR=.\migrations" && go run github.com/pressly/goose/v3/cmd/goose postgres "user=microservices password=microservices dbname=microservices sslmode=disable" up
+	migrate -database=$(URL) -path=./migrations up
 
-migrate-down:
-	@set "GOOSE_MIGRATION_DIR=.\migrations" && go run github.com/pressly/goose/v3/cmd/goose postgres "user=microservices password=microservices dbname=microservices sslmode=disable" down
-
-migrate-up-to:
-	@set "GOOSE_MIGRATION_DIR=.\migrations" && go run github.com/pressly/goose/v3/cmd/goose postgres "user=microservices password=microservices dbname=microservices sslmode=disable" up $(name)
-
-migrate-status:
-	@set "GOOSE_MIGRATION_DIR=.\migrations" && go run github.com/pressly/goose/v3/cmd/goose postgres "user=microservices password=microservices dbname=microservices sslmode=disable" status
-
-migrate-reset:
-	@set "GOOSE_MIGRATION_DIR=.\migrations" && go run github.com/pressly/goose/v3/cmd/goose postgres "user=microservices password=microservices dbname=microservices sslmode=disable" reset
+proto-generate:
+	protoc --go_out=./ --go_opt=paths=source_relative \
+	--go-grpc_out=./ --go-grpc_opt=paths=source_relative \
+	./proto/$(FILE)

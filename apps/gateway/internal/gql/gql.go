@@ -1,27 +1,32 @@
 package gql
 
 import (
-	"example.com/microservices/apps/gateway/internal/gql/graph"
-	"example.com/microservices/apps/gateway/internal/gql/resolvers"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/alekseytsvetkov/microservices/apps/gateway/internal/gql/directives"
+	"github.com/alekseytsvetkov/microservices/apps/gateway/internal/gql/graph"
+	"github.com/alekseytsvetkov/microservices/apps/gateway/internal/gql/resolvers"
 )
 
-func New(resolver *resolvers.Resolver) *handler.Server {
+func New(resolver *resolvers.Resolver, directive *directives.Directive) *handler.Server {
 	cfg := graph.Config{
 		Resolvers: resolver,
+		Directives: graph.DirectiveRoot{
+			IsAuthenticated: directive.IsAuthenticated,
+		},
 	}
 
 	schema := graph.NewExecutableSchema(cfg)
 
-	s := handler.New(schema)
+	server := handler.New(schema)
 
-	s.AddTransport(transport.Options{})
-	s.AddTransport(transport.GET{})
-	s.AddTransport(transport.POST{})
+	server.AddTransport(transport.Options{})
+	server.AddTransport(transport.GET{})
+	server.AddTransport(transport.POST{})
+	server.AddTransport(transport.MultipartForm{})
 
-	s.Use(extension.Introspection{})
+	server.Use(extension.Introspection{})
 
-	return s
+	return server
 }
